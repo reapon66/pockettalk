@@ -4,7 +4,7 @@ import socket
 import threading
 
 
-SERVER_HOST = "192.168.5.133"  # Altere aqui para o IP do seu servidor.
+SERVER_HOST = "192.168.5.133"  # Coloque aqui o IP mostrado ao iniciar o servidor.
 SERVER_PORT = 12000
 ENCODING = "utf-8"
 

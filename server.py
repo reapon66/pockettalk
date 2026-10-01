@@ -4,14 +4,24 @@ import socket
 import threading
 
 
-HOST = ""
+HOST = "0.0.0.0"
 PORT = 12000
 ENCODING = "utf-8"
 
-# Cada cliente conectado é atendido por uma thread. O lock protege o dicionário
-# enquanto clientes entram, saem e mensagens são distribuídas.
+# Aqui guardamos quem está no chat. O lock evita conflitos quando duas pessoas
+# entram, saem ou enviam mensagens ao mesmo tempo.
 clients = {}
 clients_lock = threading.Lock()
+
+
+def get_local_ip():
+    """Descobre o IP desta máquina que os outros clientes podem usar."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as test_socket:
+            test_socket.connect(("8.8.8.8", 80))
+            return test_socket.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
 
 
 def send_message(connection, message, send_lock=None):
@@ -59,8 +69,8 @@ def handle_client(connection, address):
             send_message(connection, "Nome inválido. Conexão encerrada.")
             return
 
-        # O lock individual garante que a saudação seja sempre a primeira
-        # mensagem e que broadcasts simultâneos não se misturem no socket.
+        # Primeiro damos as boas-vindas; depois avisamos o restante da turma.
+        # Assim, a primeira mensagem recebida por quem entrou é sempre a saudação.
         with send_lock:
             with clients_lock:
                 clients[connection] = (name, send_lock)
@@ -106,7 +116,11 @@ def run_server():
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind((HOST, PORT))
         server_socket.listen()
-        print(f"Servidor pronto para receber conexões na porta {PORT}")
+        local_ip = get_local_ip()
+        print("Servidor iniciado com sucesso!")
+        print(f"IP: {local_ip}")
+        print(f"Porta: {PORT}")
+        print(f"Endereço para os clientes: {local_ip}:{PORT}")
 
         while True:
             connection, address = server_socket.accept()
